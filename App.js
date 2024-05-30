@@ -1,90 +1,164 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, Linking, Image, Animated, TouchableWithoutFeedback } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import { NativeBaseProvider, Actionsheet, useDisclose } from 'native-base';
 
 const countries = [
-  { name: 'Albania', latitude: 41.1533, longitude: 20.1683 },
-  { name: 'Bosnia and Herzegovina', latitude: 43.9159, longitude: 17.6791 },
-  { name: 'Bulgaria', latitude: 42.7339, longitude: 25.4858 },
-  { name: 'Croatia', latitude: 45.1, longitude: 15.2 },
-  { name: 'Greece', latitude: 39.0742, longitude: 21.8243 },
-  { name: 'Kosovo', latitude: 42.6026, longitude: 20.9030 },
-  { name: 'Montenegro', latitude: 42.7087, longitude: 19.3744 },
-  { name: 'Moldova', latitude: 47.4116, longitude: 28.3699 },
-  { name: 'North Macedonia', latitude: 41.6086, longitude: 21.7453 },
-  { name: 'Romania', latitude: 45.9432, longitude: 24.9668 },
-  { name: 'Serbia', latitude: 44.0165, longitude: 21.0059 },
-  { name: 'Slovenia', latitude: 46.1512, longitude: 14.9955 },
-  { name: 'Turkey', latitude: 38.9637, longitude: 35.2433 },
+  { name: 'Albania', latitude: 41.1533, longitude: 20.1683, link: 'https://www.tripadvisor.com/Attractions-g294445-Activities-Albania.html', image: require('./assets/Albania.png'), color: '#808000' },
+  { name: 'Bosnia & Herz.', latitude: 43.9159, longitude: 17.6791, link: 'https://www.tripadvisor.com/Attractions-g294449-Activities-Bosnia_and_Herzegovina.html', image: require('./assets/BosniaAndHerzegovina.png'), color: '#C70039' },
+  { name: 'Bulgaria', latitude: 42.7339, longitude: 25.4858, link: 'https://www.tripadvisor.com/Attractions-g294451-Activities-Bulgaria.html', image: require('./assets/Bulgaria.png'), color: '#900C3F' },
+  { name: 'Croatia', latitude: 45.1, longitude: 15.2, link: 'https://www.tripadvisor.com/Attractions-g294453-Activities-Croatia.html', image: require('./assets/Croatia.png'), color: '#581845' },
+  { name: 'Greece', latitude: 39.0742, longitude: 21.8243, link: 'https://www.tripadvisor.com/Attractions-g189398-Activities-Greece.html', image: require('./assets/Greece.png'), color: '#1ABC9C' },
+  { name: 'Kosovo', latitude: 42.6026, longitude: 20.9030, link: 'https://www.tripadvisor.com/Attractions-g304082-Activities-Kosovo.html', image: require('./assets/Kosovo.png'), color: '#2ECC71' },
+  { name: 'Montenegro', latitude: 42.7087, longitude: 19.3744, link: 'https://www.tripadvisor.com/Attractions-g635648-Activities-Montenegro.html', image: require('./assets/Montenegro.png'), color: '#3498DB' },
+  { name: 'Moldova', latitude: 47.4116, longitude: 28.3699, link: 'https://www.tripadvisor.com/Attractions-g294455-Activities-Moldova.html', image: require('./assets/Moldova.png'), color: '#9B59B6' },
+  { name: 'N. Macedonia', latitude: 41.6086, longitude: 21.7453, link: 'https://www.tripadvisor.com/Attractions-g295109-Activities-Republic_of_North_Macedonia.html', image: require('./assets/NorthMacedonia.png'), color: '#34495E' },
+  { name: 'Romania', latitude: 45.9432, longitude: 24.9668, link: 'https://www.tripadvisor.com/Attractions-g294457-Activities-Romania.html', image: require('./assets/Romania.png'), color: '#16A085' },
+  { name: 'Serbia', latitude: 44.0165, longitude: 21.0059, link: 'https://www.tripadvisor.com/Attractions-g294471-Activities-Serbia.html', image: require('./assets/Serbia.png'), color: '#27AE60' },
+  { name: 'Slovenia', latitude: 46.1512, longitude: 14.9955, link: 'https://www.tripadvisor.com/Attractions-g274862-Activities-Slovenia.html', image: require('./assets/Slovenia.png'), color: '#2980B9' },
+  { name: 'Turkey', latitude: 38.9637, longitude: 35.2433, link: 'https://www.tripadvisor.com/Attractions-g293969-Activities-Turkiye.html', image: require('./assets/Turkey.png'), color: '#8E44AD' },
 ];
 
 export default function App() {
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const { isOpen, onOpen, onClose } = useDisclose();
+  const [selectedCountry, setSelectedCountry] = useState(null);
 
-  const showLocation = (country) => {
+  const scaleValues = useRef(countries.map(() => new Animated.Value(1))).current;
+
+  const showOptions = (country) => {
+    setSelectedCountry(country);
+    onOpen();
+  };
+
+  const showLocation = () => {
     setSelectedLocation({
-      latitude: country.latitude,
-      longitude: country.longitude,
-      name: country.name,
+      latitude: selectedCountry.latitude,
+      longitude: selectedCountry.longitude,
+      name: selectedCountry.name,
     });
-    Alert.alert(`${country.name}`, `Latitude: ${country.latitude}, Longitude: ${country.longitude}`);
+    onClose();
+  };
+
+  const openLink = (url) => {
+    Linking.openURL(url);
+    onClose();
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Balkan Express</Text>
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        {countries.map((country, index) => (
-          <TouchableOpacity key={index} style={styles.item} onPress={() => showLocation(country)}>
-            <Text style={styles.itemText}>{country.name}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-      {selectedLocation && (
-        <View style={styles.locationContainer}>
-          <Text style={styles.locationText}>Selected Location:</Text>
-          <Text style={styles.locationText}>{selectedLocation.name}</Text>
-          <Text style={styles.locationText}>Latitude: {selectedLocation.latitude}</Text>
-          <Text style={styles.locationText}>Longitude: {selectedLocation.longitude}</Text>
-        </View>
-      )}
-    </View>
+    <NativeBaseProvider>
+      <View style={styles.container}>
+        <Text style={styles.title}>Balkan Express</Text>
+        <ScrollView contentContainerStyle={styles.scrollViewContent} horizontal>
+          {countries.map((country, index) => {
+            const scaleValue = scaleValues[index];
+
+            const handlePressIn = () => {
+              Animated.spring(scaleValue, {
+                toValue: 0.95,
+                useNativeDriver: true,
+              }).start();
+            };
+
+            const handlePressOut = () => {
+              Animated.spring(scaleValue, {
+                toValue: 1,
+                useNativeDriver: true,
+              }).start();
+            };
+
+            return (
+              <TouchableWithoutFeedback
+                key={index}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+                onPress={() => showOptions(country)}
+              >
+                <Animated.View style={[styles.item, { backgroundColor: country.color, transform: [{ scale: scaleValue }] }]}>
+                  <Image source={country.image} style={styles.itemImage} />
+                  <Text style={styles.itemText}>{country.name}</Text>
+                </Animated.View>
+              </TouchableWithoutFeedback>
+            );
+          })}
+        </ScrollView>
+        {selectedLocation && (
+          <MapView
+            style={styles.map}
+            initialRegion={{
+              latitude: selectedLocation.latitude,
+              longitude: selectedLocation.longitude,
+              latitudeDelta: 5,
+              longitudeDelta: 5,
+            }}
+            region={{
+              latitude: selectedLocation.latitude,
+              longitude: selectedLocation.longitude,
+              latitudeDelta: 5,
+              longitudeDelta: 5,
+            }}
+          >
+            <Marker
+              coordinate={{
+                latitude: selectedLocation.latitude,
+                longitude: selectedLocation.longitude,
+              }}
+              title={selectedLocation.name}
+            />
+          </MapView>
+        )}
+        <Actionsheet isOpen={isOpen} onClose={onClose}>
+          <Actionsheet.Content>
+            <Actionsheet.Item onPress={showLocation}>View on Map</Actionsheet.Item>
+            <Actionsheet.Item onPress={() => openLink(selectedCountry.link)}>Things to Do (TripAdvisor)</Actionsheet.Item>
+            <Actionsheet.Item onPress={onClose}>Cancel</Actionsheet.Item>
+          </Actionsheet.Content>
+        </Actionsheet>
+      </View>
+    </NativeBaseProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    padding: 16,
+    padding: 4,
     backgroundColor: '#f5f5f5',
   },
   title: {
-    fontSize: 24,
+    fontSize: 50,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 10,
+    marginTop: 50,
   },
   scrollViewContent: {
     alignItems: 'center',
+    paddingTop: 24,
+    flexDirection: 'row',
   },
   item: {
     padding: 16,
-    marginVertical: 8,
-    backgroundColor: '#4CAF50',
+    margin: 8,
     borderRadius: 8,
-    width: '80%',
     alignItems: 'center',
+    width: 120,
+  },
+  itemImage: {
+    width: 100,
+    height: 60,
+    marginBottom: 8,
+    borderRadius: 8,
   },
   itemText: {
-    fontSize: 18,
+    fontSize: 12,
     color: '#fff',
+    textAlign: 'center',
   },
-  locationContainer: {
+  map: {
+    width: '100%',
+    height: 300,
     marginTop: 24,
-    alignItems: 'center',
-  },
-  locationText: {
-    fontSize: 18,
-    marginTop: 8,
   },
 });
